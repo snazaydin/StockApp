@@ -8,29 +8,35 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add DbContext
-// YENÝ HALÝ:
+// Add DbContext - PostgreSQL'e geçiþ için UseNpgsql kullanýldý
 builder.Services.AddDbContext<StockDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        // CRITICAL FIX: Baðlantý esnekliði (retry) özelliði doðru þekilde eklendi
+        o => o.EnableRetryOnFailure()
+    )
+);
 
 var app = builder.Build();
 
-
 // Apply migrations automatically
-using (var scope = app.Services.CreateScope())
+// Uygulama Geliþtirme (Development) ortamýnda deðilse (yani terminalden çalýþýyorsa) migration'larý uygula.
+if (!app.Environment.IsDevelopment())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<StockDbContext>();
-    dbContext.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<StockDbContext>();
+        // Debug modunda hata almamak için bu satýr Development ortamýnda atlanacak.
+        dbContext.Database.Migrate();
+    }
 }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
-app.UseHttpsRedirection();
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "StockApp v1"));
+app.MapGet("/", () => Results.Redirect("/swagger")); // Kök dizin yönlendirmesi
+
+
 
 app.UseAuthorization();
 
