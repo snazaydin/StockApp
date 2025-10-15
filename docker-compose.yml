@@ -1,0 +1,32 @@
+
+
+services:
+  # C# API Servisi
+  api:
+    # Dockerfile'ın bu dosya ile aynı klasörde olduğunu belirtiyoruz.
+    build: .
+    container_name: stockapp-api
+    ports:
+      - "8081:8080" # Lokal makinenizin 8081 portunu container'ın 8080 portuna bağlar
+    environment:
+      # Container'dan container'a bağlantı için.
+      - ConnectionStrings__DefaultConnection=Host=postgres-db;Port=5432;Database=stock_db;Username=user;Password=password
+    depends_on:
+      - postgres-db # API'nin başlamadan önce veritabanının başlamasını sağlar
+
+  # PostgreSQL Veritabanı Servisi
+  postgres-db:
+    image: postgres:15 # PostgreSQL'in 15. sürümünü kullan
+    container_name: postgres-db
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=stock_db
+    ports:
+      - "5432:5432" # Dışarıdan bir veritabanı aracıyla bağlanmak için
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Verilerin kalıcı olmasını sağlar
+
+volumes:
+  # Veritabanı verilerini saklamak için bir Docker volume tanımlanıyor
+  pgdata:
