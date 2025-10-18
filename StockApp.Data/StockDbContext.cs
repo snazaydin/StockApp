@@ -15,9 +15,12 @@ namespace StockApp.Data
         }
 
         public DbSet<Urun> Urunler { get; set; }
+        public DbSet<StokHareketi> StokHareketleri { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            
+
             modelBuilder.Entity<Urun>().HasData(
                 new Urun { Id = 1, Adi = "Laptop", StokMiktari = 50 },
                 new Urun { Id = 2, Adi = "Mouse", StokMiktari = 200 }

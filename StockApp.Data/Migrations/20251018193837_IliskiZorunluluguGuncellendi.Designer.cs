@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StockApp.Data;
@@ -11,9 +12,11 @@ using StockApp.Data;
 namespace StockApp.Data.Migrations
 {
     [DbContext(typeof(StockDbContext))]
-    partial class StockDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251018193837_IliskiZorunluluguGuncellendi")]
+    partial class IliskiZorunluluguGuncellendi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,6 +51,8 @@ namespace StockApp.Data.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UrunId");
 
                     b.ToTable("StokHareketleri");
                 });
@@ -84,6 +89,15 @@ namespace StockApp.Data.Migrations
                             Adi = "Mouse",
                             StokMiktari = 200
                         });
+                });
+
+            modelBuilder.Entity("StockApp.Data.Models.StokHareketi", b =>
+                {
+                    b.HasOne("StockApp.Data.Models.Urun", "Urun")
+                        .WithMany()
+                        .HasForeignKey("UrunId");
+
+                    b.Navigation("Urun");
                 });
 #pragma warning restore 612, 618
         }
