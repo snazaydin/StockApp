@@ -27,9 +27,28 @@ public class StokHareketleriController : ControllerBase
 
     // POST: api/StokHareketleri (Yeni stok hareketini kaydet ve stok miktarını güncelle)
     [HttpPost]
-    public async Task<ActionResult<StokHareketi>> PostStokHareketi(StokHareketi hareket)
+    public async Task<ActionResult<StokHareketi>> PostStokHareketi(StokHareketleriDto hareket)
     {
+        StokHareketi yeniHareket = new StokHareketi
+        {
+            HareketTarihi = hareket.HareketTarihi,
+            HareketTipi = hareket.HareketTipi,
+            Miktar = hareket.Miktar,
+            Aciklama = hareket.Aciklama,
+            UrunId = hareket.UrunId
+        };
+
+
+
+
+
+
+
+
+
+
         // Model doğrulama API'nin zorunlu alanlarını kontrol eder (UrunId ve Miktar)
+
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -63,7 +82,7 @@ public class StokHareketleriController : ControllerBase
         }
 
         // 3. Değişiklikleri Kaydet (Hem Stok Hareketi hem de Ürün Güncellemesi)
-        _context.StokHareketleri.Add(hareket);
+        _context.StokHareketleri.Add(yeniHareket);
         _context.Entry(urun).State = EntityState.Modified; // Ürün nesnesinin güncellendiğini belirt
 
         await _context.SaveChangesAsync();
