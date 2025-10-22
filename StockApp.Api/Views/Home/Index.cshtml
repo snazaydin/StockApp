@@ -1,0 +1,328 @@
+﻿@{
+    ViewData["Title"] = "Stok Yönetim Paneli";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+
+    <!-- STANDART CSS BURAYA YAZILDI -->
+    <style>
+        /* Genel Düzen ve Font */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        #main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Başlık ve Mesajlar */
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .message-box {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: none;
+            font-weight: bold;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Form ve Liste Düzeni (Grid benzeri) */
+        .content-grid {
+            display: flex;
+            gap: 25px;
+        }
+
+        .form-section {
+            flex: 1; /* 1/3 genişlik */
+            background-color: #e9f0ff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .list-section {
+            flex: 2; /* 2/3 genişlik */
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* Butonlar */
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-refresh {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background-color: #1e7e34;
+        }
+
+        /* Tablo Stilleri */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .btn-action {
+            margin-right: 8px;
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+
+        .btn-edit {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <h1>Stok Yönetim Paneli</h1>
+
+        <!-- Mesaj Kutusu -->
+        <div id="messageBox" class="message-box"></div>
+
+        <div class="content-grid">
+
+            <!-- 1. YENİ ÜRÜN EKLEME FORMU (POST) -->
+            <div class="form-section">
+                <h2>➕ Yeni Ürün Kaydı</h2>
+
+                <form id="productForm" onsubmit="handleProductSubmit(event)">
+                    <div class="input-group">
+                        <label for="adi">Ürün Adı</label>
+                        <input type="text" id="adi" name="adi" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="stokMiktari">Başlangıç Stoğu</label>
+                        <input type="number" id="stokMiktari" name="stokMiktari" required min="0" value="0">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Ürünü Kaydet</button>
+                </form>
+            </div>
+
+            <!-- 2. MEVCUT ÜRÜNLER LİSTESİ (GET) -->
+            <div class="list-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2>📊 Mevcut Ürünler</h2>
+                    <button onclick="fetchProducts()" class="btn btn-refresh">Listeyi Yenile (GET)</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Ürün Adı</th>
+                                <th>Stok Miktarı</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <!-- Ürünler buraya JavaScript ile yüklenecek -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Kodu -->
+    <script>
+        // API ADRESİ: Docker'da çalıştığı için 8080 portunu kullanır.
+        const API_BASE_URL = 'http://localhost:8080/api/Products';
+        const productsTableBody = document.getElementById('productsTableBody');
+        const messageBox = document.getElementById('messageBox');
+
+        // --- Yardımcı Fonksiyon: Mesaj Gösterme ---
+        function showMessage(type, message) {
+            messageBox.className = `message-box ${type}`;
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            setTimeout(() => messageBox.style.display = 'none', 5000);
+        }
+
+        // --- ÜRÜNLERİ GETİRME (GET) ---
+        async function fetchProducts() {
+            productsTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Yükleniyor...</td></tr>';
+            try {
+                const response = await fetch(API_BASE_URL);
+
+                if (!response.ok) {
+                    throw new Error(`API hatası: ${response.status} - Lütfen Docker konteynerlerini kontrol edin.`);
+                }
+
+                const products = await response.json();
+                productsTableBody.innerHTML = '';
+
+                if (products.length === 0) {
+                    productsTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Henüz ürün bulunmamaktadır.</td></tr>';
+                    return;
+                }
+
+                products.forEach(product => {
+                    const row = `
+                        <tr>
+                            <td>${product.id}</td>
+                            <td>${product.adi}</td>
+                            <td>${product.stokMiktari}</td>
+                            <td>
+                                <button onclick="alert('Stok işlemleri formu açılacak.')" class="btn btn-action btn-edit">Stok İşlemi</button>
+                                <button onclick="deleteProduct(${product.id})" class="btn btn-action btn-delete">Sil</button>
+                            </td>
+                        </tr>
+                    `;
+                    productsTableBody.innerHTML += row;
+                });
+            } catch (error) {
+                productsTableBody.innerHTML = `<tr><td colspan="4" class="error" style="text-align: center;">${error.message}</td></tr>`;
+                showMessage('error', `Veri yükleme başarısız. API bağlantı hatası.`);
+            }
+        }
+
+        // --- YENİ ÜRÜN EKLEME (POST) ---
+        async function handleProductSubmit(event) {
+            event.preventDefault(); // Sayfanın yenilenmesini engeller
+
+            const adi = document.getElementById('adi').value;
+            const stokMiktari = parseInt(document.getElementById('stokMiktari').value);
+
+            const newProduct = {
+                adi: adi,
+                stokMiktari: stokMiktari
+            };
+
+            try {
+                const response = await fetch(API_BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProduct)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.status === 400 ? await response.json() : { title: `POST Hatası: ${response.status}` };
+                    throw new Error(errorData.title || JSON.stringify(errorData.errors) || `API hatası: ${response.status}`);
+                }
+
+                // Formu temizle ve listeyi yenile
+                document.getElementById('productForm').reset();
+                fetchProducts();
+                showMessage('success', `Ürün başarıyla kaydedildi!`);
+
+            } catch (error) {
+                showMessage('error', `Ürün kaydı başarısız oldu: ${error.message}`);
+            }
+        }
+
+        // --- ÜRÜN SİLME (DELETE) ---
+        async function deleteProduct(id) {
+            if (!confirm(`ID ${id} olan ürünü silmek istediğinizden emin misiniz?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.status === 204) {
+                    fetchProducts();
+                    showMessage('success', `Ürün (ID: ${id}) başarıyla silindi.`);
+                } else if (response.status === 404) {
+                    showMessage('error', `Ürün (ID: ${id}) bulunamadı.`);
+                } else {
+                    throw new Error(`Silme hatası: ${response.status}`);
+                }
+
+            } catch (error) {
+                showMessage('error', `Silme işlemi başarısız: ${error.message}`);
+            }
+        }
+
+        // Sayfa yüklendiğinde ürünleri getir
+        window.onload = fetchProducts;
+    </script>
+</body>
+</html>
